@@ -1,0 +1,14 @@
+{
+  "background_color": "#cbbdbd",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "Campus Navigation",
+  "orientation": "portrait",
+  "scope": "/",
+  "short_name": "CampusNav",
+  "start_url": "/campusnav/",
+  "theme_color": "#cd8e8e",
+  "id": "com.campus.navigation",
+  "description": "Campus navigation system to locate buildings and routes easily",
+  "lang": "en"
+}
