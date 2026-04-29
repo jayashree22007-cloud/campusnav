@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>CampusNav – Smart Campus Navigation</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0b1f4a;
+    --navy2: #1a3270;
+    --accent: #ff5c35;
+    --accent2: #ff8a6a;
+    --green: #22c55e;
+    --red: #ef4444;
+    --yellow: #f59e0b;
+    --purple: #8b5cf6;
+    --blue: #3b82f6;
+    --bg: #f0f4ff;
+    --card: #ffffff;
+    --text: #0f172a;
+    --mid: #475569;
+    --light: #94a3b8;
+    --border: #e2e8f0;
+    --shadow: 0 4px 24px rgba(11,31,74,0.10);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); overflow: hidden; }
+
+  /* ── SPLASH ── */
+  #splash {
+    position: fixed; inset: 0; z-index: 999;
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+    animation: splashOut 0.5s 2.2s ease forwards;
+  }
+  @keyframes splashOut { to { opacity: 0; pointer-events: none; } }
+  .splash-logo {
+    width: 90px; height: 90px; border-radius: 26px;
+    background: rgba(255,255,255,0.12); border: 2px solid rgba(255,255,255,0.25);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 46px;
+    animation: popIn 0.6s 0.3s cubic-bezier(.34,1.56,.64,1) both;
+  }
+  @keyframes popIn { from { transform: scale(0.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .splash-title {
+    font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; color: #fff;
+    animation: fadeUp 0.5s 0.7s ease both;
+  }
+  .splash-sub { color: rgba(255,255,255,0.6); font-size: 14px; animation: fadeUp 0.5s 0.9s ease both; }
+  .splash-bar {
+    width: 160px; height: 4px; background: rgba(255,255,255,0.15); border-radius: 4px; overflow: hidden;
+    animation: fadeUp 0.5s 1.1s ease both;
+  }
+  .splash-bar::after {
+    content: ''; display: block; height: 100%; background: var(--accent);
+    border-radius: 4px; animation: barFill 1.5s 1.1s ease forwards;
+  }
+  @keyframes barFill { from { width: 0; } to { width: 100%; } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── LAYOUT ── */
+  #app { height: 100vh; display: flex; flex-direction: column; }
+  .header {
+    background: linear-gradient(135deg, var(--navy), var(--navy2));
+    padding: 14px 20px 12px; flex-shrink: 0;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .header-logo { font-size: 26px; }
+  .header-title { font-family: 'Syne', sans-serif; color: #fff; font-size: 20px; font-weight: 800; }
+  .header-sub { color: rgba(255,255,255,0.55); font-size: 11px; }
+  .header-status { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .status-label { color: rgba(255,255,255,0.6); font-size: 11px; }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex; background: var(--navy); border-top: 1px solid rgba(255,255,255,0.08);
+    flex-shrink: 0;
+  }
+  .tab {
+    flex: 1; padding: 10px 4px; cursor: pointer; text-align: center;
+    color: rgba(255,255,255,0.45); font-size: 11px; font-weight: 500;
+    border-bottom: 2px solid transparent; transition: all 0.2s;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+  }
+  .tab .tab-icon { font-size: 18px; }
+  .tab.active { color: #fff; border-bottom-color: var(--accent); }
+
+  /* ── SCREENS ── */
+  .screen { flex: 1; overflow-y: auto; display: none; }
+  .screen.active { display: block; }
+
+  /* ── HOME ── */
+  .hero-banner {
+    background: linear-gradient(135deg, var(--navy), var(--navy2));
+    padding: 20px 20px 28px; position: relative; overflow: hidden;
+  }
+  .hero-banner::before {
+    content: ''; position: absolute; right: -30px; top: -30px;
+    width: 180px; height: 180px; border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+  }
+  .hero-banner::after {
+    content: ''; position: absolute; right: 30px; bottom: -50px;
+    width: 120px; height: 120px; border-radius: 50%;
+    background: rgba(255,92,53,0.12);
+  }
+  .hero-greeting { color: rgba(255,255,255,0.6); font-size: 13px; margin-bottom: 4px; }
+  .hero-title { font-family: 'Syne', sans-serif; color: #fff; font-size: 24px; font-weight: 800; line-height: 1.2; margin-bottom: 14px; }
+  .hero-stats { display: flex; gap: 20px; }
+  .hero-stat { }
+  .hero-stat-val { font-family: 'Syne', sans-serif; color: #fff; font-size: 22px; font-weight: 700; }
+  .hero-stat-lbl { color: rgba(255,255,255,0.5); font-size: 11px; }
+
+  .home-content { padding: 16px; }
+  .section-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; margin-top: 4px; }
+  .section-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; color: var(--text); }
+  .section-icon { font-size: 16px; }
+
+  /* Quick actions */
+  .quick-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 22px; }
+  .quick-card {
+    border-radius: 14px; padding: 16px 10px; text-align: center; cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: var(--shadow);
+  }
+  .quick-card:active { transform: scale(0.96); }
+  .quick-card .qc-icon { font-size: 26px; margin-bottom: 8px; }
+  .quick-card .qc-label { font-size: 12px; font-weight: 600; color: #fff; }
+
+  /* Announcements */
+  .announce-card {
+    background: var(--card); border-radius: 12px; padding: 13px 14px;
+    margin-bottom: 8px; box-shadow: var(--shadow);
+    border-left: 4px solid var(--navy);
+    animation: fadeUp 0.4s ease both;
+  }
+  .announce-title { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+  .announce-msg { font-size: 12px; color: var(--mid); line-height: 1.4; }
+
+  /* Location category cards */
+  .loc-card {
+    background: var(--card); border-radius: 14px; padding: 13px 14px;
+    margin-bottom: 10px; display: flex; align-items: center; gap: 13px;
+    box-shadow: var(--shadow); cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    animation: fadeUp 0.4s ease both;
+  }
+  .loc-card:active { transform: scale(0.98); }
+  .loc-icon-wrap {
+    width: 46px; height: 46px; border-radius: 12px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
+  }
+  .loc-info { flex: 1; min-width: 0; }
+  .loc-name { font-weight: 600; font-size: 14px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .loc-cat { font-size: 11px; color: var(--light); }
+  .loc-arrow { color: var(--light); font-size: 18px; }
+
+  /* ── NAVIGATE ── */
+  .nav-screen { padding: 16px; }
+  .route-card { background: var(--card); border-radius: 16px; padding: 18px; box-shadow: var(--shadow); margin-bottom: 16px; }
+  .route-card-title { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+
+  .selector-wrap { position: relative; margin-bottom: 8px; }
+  .selector-label { font-size: 11px; color: var(--light); font-weight: 500; margin-bottom: 4px; }
+  .selector-btn {
+    width: 100%; padding: 13px 14px; border-radius: 12px;
+    background: var(--bg); border: 1.5px solid var(--border);
+    display: flex; align-items: center; gap: 10px; cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .selector-btn:hover { border-color: var(--navy); }
+  .selector-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .selector-text { flex: 1; font-size: 14px; color: var(--mid); font-family: 'DM Sans', sans-serif; text-align: left; }
+  .selector-text.selected { color: var(--text); font-weight: 500; }
+  .selector-clear { font-size: 18px; color: var(--light); background: none; border: none; cursor: pointer; padding: 0; }
+
+  .swap-btn {
+    display: flex; justify-content: center; margin: 4px 0;
+  }
+  .swap-btn button {
+    width: 36px; height: 36px; border-radius: 50%; background: rgba(11,31,74,0.07);
+    border: 1.5px solid var(--border); cursor: pointer; font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
+  }
+  .swap-btn button:hover { background: var(--navy); color: #fff; }
+
+  .find-btn {
+    width: 100%; padding: 15px; border-radius: 12px; border: none;
+    background: var(--accent); color: #fff; font-size: 15px; font-weight: 700;
+    font-family: 'Syne', sans-serif; cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 4px 16px rgba(255,92,53,0.35);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .find-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(255,92,53,0.4); }
+  .find-btn:active { transform: scale(0.98); }
+
+  /* Route result */
+  .route-result { background: linear-gradient(135deg, var(--navy), var(--navy2)); border-radius: 16px; padding: 20px; box-shadow: var(--shadow); margin-bottom: 16px; }
+  .route-result-title { font-family: 'Syne', sans-serif; color: #fff; font-size: 16px; font-weight: 700; margin-bottom: 14px; }
+  .route-stats { display: flex; gap: 24px; margin-bottom: 4px; }
+  .route-stat { }
+  .route-stat-val { font-family: 'Syne', sans-serif; color: #fff; font-size: 20px; font-weight: 700; }
+  .route-stat-lbl { color: rgba(255,255,255,0.55); font-size: 11px; }
+
+  .steps-card { background: var(--card); border-radius: 16px; padding: 16px; box-shadow: var(--shadow); }
+  .step-row { display: flex; gap: 12px; }
+  .step-line-col { display: flex; flex-direction: column; align-items: center; }
+  .step-num {
+    width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 13px; border: 2px solid;
+  }
+  .step-connector { flex: 1; width: 2px; background: var(--border); margin: 4px 0; }
+  .step-content { flex: 1; padding-bottom: 16px; }
+  .step-name { font-weight: 600; font-size: 14px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+  .step-dist { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; background: var(--bg); border-radius: 8px; font-size: 11px; color: var(--light); }
+
+  /* ── LOCATION LIST ── */
+  .list-screen { padding: 0; }
+  .list-search-wrap { padding: 14px 16px 10px; position: sticky; top: 0; background: var(--bg); z-index: 10; }
+  .list-search {
+    width: 100%; padding: 12px 16px 12px 42px; border-radius: 12px;
+    border: 1.5px solid var(--border); background: var(--card);
+    font-size: 14px; font-family: 'DM Sans', sans-serif; color: var(--text);
+    outline: none; transition: border-color 0.2s;
+    position: relative;
+  }
+  .list-search:focus { border-color: var(--navy); }
+  .search-wrap { position: relative; }
+  .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 16px; color: var(--light); pointer-events: none; }
+
+  .filter-tabs { display: flex; gap: 8px; padding: 0 16px 12px; overflow-x: auto; scrollbar-width: none; }
+  .filter-tabs::-webkit-scrollbar { display: none; }
+  .filter-tab {
+    padding: 6px 14px; border-radius: 20px; white-space: nowrap; font-size: 12px;
+    font-weight: 600; cursor: pointer; border: 1.5px solid var(--border);
+    background: var(--card); color: var(--mid); transition: all 0.2s;
+  }
+  .filter-tab.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+
+  .list-items { padding: 0 16px 16px; }
+
+  /* ── MAP ── */
+  .map-screen { padding: 0; display: flex; flex-direction: column; }
+  .map-legend { display: flex; gap: 12px; padding: 10px 16px; background: var(--card); border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; flex-shrink: 0; }
+  .map-legend::-webkit-scrollbar { display: none; }
+  .legend-item { display: flex; align-items: center; gap: 5px; white-space: nowrap; font-size: 11px; color: var(--mid); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .map-hint { font-size: 10px; color: var(--light); padding: 6px 16px; background: var(--bg); border-bottom: 1px solid var(--border); }
+
+  .map-canvas-wrap {
+    flex: 1; overflow: hidden; position: relative; background: #e8f0fe;
+    cursor: grab;
+  }
+  .map-canvas-wrap:active { cursor: grabbing; }
+  #campusCanvas { display: block; width: 100%; height: 100%; touch-action: none; }
+
+  .map-info-panel {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: var(--card); padding: 14px 16px;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+    display: flex; align-items: center; gap: 12px;
+    transform: translateY(100%); transition: transform 0.3s ease;
+    border-radius: 16px 16px 0 0;
+  }
+  .map-info-panel.visible { transform: translateY(0); }
+  .map-info-icon { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+  .map-info-text { flex: 1; }
+  .map-info-name { font-weight: 700; font-size: 14px; }
+  .map-info-cat { font-size: 12px; color: var(--light); }
+  .map-nav-btn { padding: 9px 16px; background: var(--accent); color: #fff; border: none; border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer; font-family: 'Syne', sans-serif; }
+
+  /* ── LOCATION PICKER MODAL ── */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100;
+    display: none; align-items: flex-end;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal-sheet {
+    width: 100%; background: var(--card); border-radius: 20px 20px 0 0;
+    padding: 0; max-height: 80vh; display: flex; flex-direction: column;
+    animation: slideUp 0.3s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 12px auto 0; }
+  .modal-title { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; padding: 14px 20px 10px; }
+  .modal-search-wrap { padding: 0 16px 10px; position: relative; }
+  .modal-search {
+    width: 100%; padding: 11px 14px 11px 38px; border-radius: 12px;
+    border: 1.5px solid var(--border); background: var(--bg);
+    font-size: 14px; font-family: 'DM Sans', sans-serif; outline: none;
+  }
+  .modal-search:focus { border-color: var(--navy); }
+  .modal-search-icon { position: absolute; left: 28px; top: 50%; transform: translateY(-50%); color: var(--light); font-size: 15px; }
+  .modal-list { overflow-y: auto; flex: 1; padding: 0 16px 20px; }
+  .modal-item {
+    display: flex; align-items: center; gap: 12px; padding: 12px 0;
+    border-bottom: 1px solid var(--border); cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .modal-item:active { opacity: 0.6; }
+  .modal-item:last-child { border-bottom: none; }
+  .modal-item-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .modal-item-name { font-weight: 600; font-size: 14px; }
+  .modal-item-cat { font-size: 11px; color: var(--light); }
+
+  /* ── DETAIL MODAL ── */
+  .detail-modal {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200;
+    display: none; align-items: flex-end;
+  }
+  .detail-modal.open { display: flex; }
+  .detail-sheet {
+    width: 100%; background: var(--card); border-radius: 20px 20px 0 0;
+    max-height: 85vh; overflow-y: auto;
+    animation: slideUp 0.3s ease;
+  }
+  .detail-hero { padding: 24px 20px 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .detail-hero-icon { width: 72px; height: 72px; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 36px; }
+  .detail-hero-name { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; text-align: center; }
+  .detail-hero-badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .detail-body { padding: 0 20px 24px; }
+  .detail-section { margin-bottom: 18px; }
+  .detail-section-title { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: var(--light); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .detail-desc { font-size: 14px; color: var(--mid); line-height: 1.6; }
+  .detail-info-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 13px; color: var(--mid); }
+  .detail-info-icon { font-size: 15px; width: 20px; text-align: center; }
+  .detail-nav-btn {
+    width: 100%; padding: 15px; border-radius: 14px; border: none;
+    background: var(--accent); color: #fff; font-size: 15px; font-weight: 700;
+    font-family: 'Syne', sans-serif; cursor: pointer;
+    box-shadow: 0 4px 16px rgba(255,92,53,0.35);
+  }
+  .detail-close {
+    position: absolute; top: 14px; right: 16px;
+    background: var(--bg); border: none; border-radius: 50%;
+    width: 32px; height: 32px; cursor: pointer; font-size: 18px; color: var(--mid);
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* ── GPS ── */
+  .gps-btn {
+    position: absolute; bottom: 72px; right: 14px; z-index: 50;
+    width: 46px; height: 46px; border-radius: 14px;
+    background: var(--card); border: 1.5px solid var(--border);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.13);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; cursor: pointer; transition: all 0.2s;
+  }
+  .gps-btn:hover { background: var(--navy); }
+  .gps-btn.tracking { background: var(--blue); border-color: var(--blue); animation: gpsPulse 2s infinite; }
+  .gps-btn.tracking:hover { background: var(--navy); }
+  @keyframes gpsPulse { 0%,100%{box-shadow:0 4px 16px rgba(59,130,246,0.4)} 50%{box-shadow:0 4px 28px rgba(59,130,246,0.8)} }
+
+  .gps-status-bar {
+    display: none; align-items: center; gap: 8px;
+    padding: 8px 16px; background: rgba(59,130,246,0.1);
+    border-bottom: 1px solid rgba(59,130,246,0.2); font-size: 12px; color: var(--blue); flex-shrink: 0;
+  }
+  .gps-status-bar.visible { display: flex; }
+  .gps-status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--blue); animation: pulse 1.5s infinite; flex-shrink: 0; }
+
+  .use-gps-btn {
+    width: 100%; padding: 11px 14px; border-radius: 12px;
+    background: rgba(59,130,246,0.09); border: 1.5px dashed var(--blue);
+    display: flex; align-items: center; gap: 10px; cursor: pointer;
+    margin-bottom: 8px; transition: background 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .use-gps-btn:hover { background: rgba(59,130,246,0.16); }
+  .use-gps-btn-icon { font-size: 18px; }
+  .use-gps-btn-text { font-size: 14px; color: var(--blue); font-weight: 600; }
+  .use-gps-btn-sub { font-size: 11px; color: var(--light); font-weight: 400; }
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-logo">🎓</div>
+  <div class="splash-title">CampusNav</div>
+  <div class="splash-sub">Smart Campus Navigation System</div>
+  <div class="splash-bar"></div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-logo">🏫</div>
+    <div>
+      <div class="header-title">CampusNav</div>
+      <div class="header-sub">Smart Navigation</div>
+    </div>
+    <div class="header-status">
+      <div class="status-dot"></div>
+      <div class="status-label">Live</div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('home')"><div class="tab-icon">🏠</div>Home</div>
+    <div class="tab" onclick="showTab('navigate')"><div class="tab-icon">🧭</div>Navigate</div>
+    <div class="tab" onclick="showTab('locations')"><div class="tab-icon">📋</div>Locations</div>
+    <div class="tab" onclick="showTab('map')"><div class="tab-icon">🗺️</div>Map</div>
+  </div>
+
+  <!-- HOME -->
+  <div class="screen active" id="screen-home">
+    <div class="hero-banner">
+      <div class="hero-greeting">Welcome back 👋</div>
+      <div class="hero-title">Where would you<br>like to go today?</div>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <div class="hero-stat-val">9</div>
+          <div class="hero-stat-lbl">Locations</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-val">5</div>
+          <div class="hero-stat-lbl">Departments</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-val">~5min</div>
+          <div class="hero-stat-lbl">Max Walk</div>
+        </div>
+      </div>
+    </div>
+    <div class="home-content">
+      <div class="section-header"><span class="section-icon">⚡</span><span class="section-title">Quick Access</span></div>
+      <div class="quick-grid">
+        <div class="quick-card" style="background:linear-gradient(135deg,#ff5c35,#ff8a6a)" onclick="showTab('navigate')">
+          <div class="qc-icon">🧭</div><div class="qc-label">Navigate</div>
+        </div>
+        <div class="quick-card" style="background:linear-gradient(135deg,#0b1f4a,#1a3270)" onclick="showTab('locations')">
+          <div class="qc-icon">📋</div><div class="qc-label">Locations</div>
+        </div>
+        <div class="quick-card" style="background:linear-gradient(135deg,#22c55e,#16a34a)" onclick="showTab('map')">
+          <div class="qc-icon">🗺️</div><div class="qc-label">Campus Map</div>
+        </div>
+      </div>
+
+      <div class="section-header"><span class="section-icon">📢</span><span class="section-title">Announcements</span></div>
+      <div id="announcements-list"></div>
+
+      <div class="section-header"><span class="section-icon">🏛️</span><span class="section-title">All Locations</span></div>
+      <div id="home-loc-list"></div>
+    </div>
+  </div>
+
+  <!-- NAVIGATE -->
+  <div class="screen" id="screen-navigate">
+    <div class="nav-screen">
+      <div class="route-card">
+        <div class="route-card-title">📍 Plan Your Route</div>
+        <button class="use-gps-btn" onclick="useGPSAsFrom()" id="useGPSFromBtn">
+          <span class="use-gps-btn-icon">🛰️</span>
+          <div>
+            <div class="use-gps-btn-text">Use My Current Location</div>
+            <div class="use-gps-btn-sub">Set GPS position as starting point</div>
+          </div>
+        </button>
+        <div class="selector-wrap">
+          <div class="selector-label">FROM</div>
+          <div class="selector-btn" onclick="openPicker('from')">
+            <div class="selector-dot" style="background:var(--green)"></div>
+            <span class="selector-text" id="from-text">Select starting point...</span>
+            <button class="selector-clear" id="from-clear" onclick="event.stopPropagation();clearSel('from')" style="display:none">✕</button>
+          </div>
+        </div>
+        <div class="swap-btn">
+          <button onclick="swapLocations()" title="Swap">⇅</button>
+        </div>
+        <div class="selector-wrap">
+          <div class="selector-label">TO</div>
+          <div class="selector-btn" onclick="openPicker('to')">
+            <div class="selector-dot" style="background:var(--red)"></div>
+            <span class="selector-text" id="to-text">Select destination...</span>
+            <button class="selector-clear" id="to-clear" onclick="event.stopPropagation();clearSel('to')" style="display:none">✕</button>
+          </div>
+        </div>
+        <div style="height:16px"></div>
+        <button class="find-btn" onclick="findRoute()">🔍 Find Shortest Route</button>
+      </div>
+      <div id="route-result"></div>
+    </div>
+  </div>
+
+  <!-- LOCATIONS -->
+  <div class="screen" id="screen-locations">
+    <div class="list-screen">
+      <div class="list-search-wrap">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input class="list-search" placeholder="Search buildings, departments..." oninput="filterList(this.value)" id="loc-search">
+        </div>
+      </div>
+      <div class="filter-tabs" id="filter-tabs">
+        <div class="filter-tab active" onclick="setFilter('all',this)">All</div>
+        <div class="filter-tab" onclick="setFilter('entrance',this)">Entrance / Exit</div>
+        <div class="filter-tab" onclick="setFilter('admin',this)">Administration</div>
+        <div class="filter-tab" onclick="setFilter('academic',this)">Academic</div>
+      </div>
+      <div class="list-items" id="loc-list"></div>
+    </div>
+  </div>
+
+  <!-- MAP -->
+  <div class="screen" id="screen-map" style="display:none;flex-direction:column">
+    <div class="gps-status-bar" id="gpsStatusBar">
+      <div class="gps-status-dot"></div>
+      <span id="gpsStatusText">Acquiring GPS…</span>
+    </div>
+    <div class="map-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div>Entrance/Exit</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#0b1f4a"></div>Admin</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#8b5cf6"></div>Academic</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#94a3b8"></div>Path</div>
+    </div>
+    <div class="map-hint">👆 Tap a building to see details • Pinch to zoom</div>
+    <div class="map-canvas-wrap" id="mapWrap">
+      <canvas id="campusCanvas"></canvas>
+      <button class="gps-btn" id="gpsPinBtn" onclick="toggleGPS()" title="Use my GPS location">📍</button>
+      <div class="map-info-panel" id="mapInfoPanel">
+        <div class="map-info-icon" id="mapInfoIcon"></div>
+        <div class="map-info-text">
+          <div class="map-info-name" id="mapInfoName"></div>
+          <div class="map-info-cat" id="mapInfoCat"></div>
+        </div>
+        <button class="map-nav-btn" onclick="navigateFromMap()">Navigate</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LOCATION PICKER MODAL -->
+<div class="modal-backdrop" id="picker-modal" onclick="closePicker(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="picker-title">Select Location</div>
+    <div class="modal-search-wrap">
+      <span class="modal-search-icon">🔍</span>
+      <input class="modal-search" placeholder="Search..." oninput="filterPicker(this.value)" id="picker-search">
+    </div>
+    <div class="modal-list" id="picker-list"></div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="detail-modal" id="detail-modal" onclick="closeDetail(event)">
+  <div class="detail-sheet" style="position:relative">
+    <button class="detail-close" onclick="closeDetail()">✕</button>
+    <div class="detail-hero">
+      <div class="detail-hero-icon" id="d-icon"></div>
+      <div class="detail-hero-name" id="d-name"></div>
+      <div class="detail-hero-badge" id="d-badge"></div>
+    </div>
+    <div class="detail-body">
+      <div class="detail-section">
+        <div class="detail-section-title">About</div>
+        <div class="detail-desc" id="d-desc"></div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-title">Details</div>
+        <div id="d-info"></div>
+      </div>
+      <button class="detail-nav-btn" onclick="navigateToFromDetail()">🧭 Navigate Here</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────────────────
+const LOCATIONS = [
+  { id:1, name:'Main Entrance Gate', short:'Entrance', cat:'entrance',
+    desc:'Primary entrance to the campus. Security check-in required for visitors. Open 7AM–8PM on weekdays.',
+    code:'GATE-01', icon:'🚪', color:'#22c55e', x:0.50, y:0.92 },
+  { id:2, name:'Administration Office', short:'Admin Office', cat:'admin',
+    desc:'Main administrative office handling admissions, fees, student records, and official correspondence.',
+    code:'ADMIN-01', icon:'🏢', color:'#0b1f4a', x:0.50, y:0.73 },
+  { id:3, name:'Principal Office', short:'Principal', cat:'admin',
+    desc:'Office of the Principal. Prior appointments are required for meetings. Office hours: Mon–Fri, 10AM–12PM.',
+    code:'PRIN-01', icon:'👔', color:'#1a3270', x:0.70, y:0.65 },
+  { id:4, name:'EEE Department Block', short:'EEE Dept', cat:'academic',
+    desc:'Electrical & Electronics Engineering. Features power electronics lab, machines lab, and simulation centre.',
+    code:'EEE-01', icon:'⚡', color:'#f59e0b', x:0.78, y:0.46 },
+  { id:5, name:'CSE Department Block', short:'CSE Dept', cat:'academic',
+    desc:'Computer Science & Engineering. Includes programming labs, AI/ML lab, and smart classrooms.',
+    code:'CSE-01', icon:'💻', color:'#3b82f6', x:0.26, y:0.40 },
+  { id:6, name:'MECH Department Block', short:'MECH Dept', cat:'academic',
+    desc:'Mechanical Engineering. Features workshops, CAD/CAM lab, fluid mechanics lab, and manufacturing unit.',
+    code:'MECH-01', icon:'⚙️', color:'#ef4444', x:0.14, y:0.28 },
+  { id:7, name:'CIVIL Department Block', short:'CIVIL Dept', cat:'academic',
+    desc:'Civil Engineering. Includes survey lab, material testing lab, structural design studio.',
+    code:'CIVIL-01', icon:'🏗️', color:'#22c55e', x:0.14, y:0.12 },
+  { id:8, name:'ECE Department Block', short:'ECE Dept', cat:'academic',
+    desc:'Electronics & Communication Engineering. Has signal processing lab, embedded systems lab, and VLSI lab.',
+    code:'ECE-01', icon:'📡', color:'#8b5cf6', x:0.78, y:0.28 },
+  { id:9, name:'Exit Gate', short:'Exit', cat:'exit',
+    desc:'Main exit gate. Vehicle passes must be shown for two-wheelers. Open until 9PM.',
+    code:'GATE-02', icon:'🚧', color:'#ef4444', x:0.50, y:0.06 },
+];
+
+const PATHS = [
+  [1,2,80,60],[2,1,80,60],
+  [1,3,130,95],[3,1,130,95],
+  [2,3,60,45],[3,2,60,45],
+  [2,5,160,120],[5,2,160,120],
+  [1,5,210,158],[5,1,210,158],
+  [1,4,250,188],[4,1,250,188],
+  [5,6,90,68],[6,5,90,68],
+  [5,8,200,150],[8,5,200,150],
+  [4,8,110,83],[8,4,110,83],
+  [6,7,90,68],[7,6,90,68],
+  [6,9,220,165],[9,6,220,165],
+  [7,9,200,150],[9,7,200,150],
+  [8,9,250,188],[9,8,250,188],
+  [4,3,130,98],[3,4,130,98],
+];
+
+const ANNOUNCEMENTS = [
+  { title:'CSE Lab Maintenance', msg:'Computer Lab 3 in CSE block closed for maintenance on Friday 9AM–1PM.', priority:'high' },
+  { title:'Principal Meeting Hours', msg:'Principal office: Mon–Fri 10AM–12PM. Book appointments at Admin Office.', priority:'medium' },
+  { title:'EEE Power Maintenance', msg:'Scheduled power cut in EEE block — Saturday 9AM to 12PM.', priority:'high' },
+  { title:'New Canteen Timings', msg:'Campus canteen now open 7:30AM–8:00PM on all working days.', priority:'low' },
+];
+
+const PRIORITY_COLORS = { high:'#ef4444', medium:'#f59e0b', low:'#22c55e' };
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let selectedFrom = null, selectedTo = null;
+let currentPicker = null;
+let detailLoc = null;
+let mapSelectedLoc = null;
+let listFilter = 'all';
+let listSearch = '';
+let scale = 1, offsetX = 0, offsetY = 0;
+let isDragging = false, lastX = 0, lastY = 0;
+let lastDist = 0;
+
+// ─── INIT ─────────────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  renderAnnouncements();
+  renderHomeList();
+  renderLocList();
+  setTimeout(initMap, 300);
+});
+
+// ─── TAB SWITCHING ───────────────────────────────────────────────────────────
+function showTab(name) {
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('active');
+    s.style.display = 'none';
+  });
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  const idx = ['home','navigate','locations','map'].indexOf(name);
+  document.querySelectorAll('.tab')[idx].classList.add('active');
+  const screen = document.getElementById('screen-'+name);
+  screen.style.display = name === 'map' ? 'flex' : 'block';
+  screen.classList.add('active');
+  if (name === 'map') { setTimeout(resizeCanvas, 100); }
+}
+
+// ─── ANNOUNCEMENTS ───────────────────────────────────────────────────────────
+function renderAnnouncements() {
+  const el = document.getElementById('announcements-list');
+  el.innerHTML = ANNOUNCEMENTS.map(a => `
+    <div class="announce-card" style="border-left-color:${PRIORITY_COLORS[a.priority]}">
+      <div class="announce-title">${a.title}</div>
+      <div class="announce-msg">${a.msg}</div>
+    </div>
+  `).join('');
+}
+
+// ─── HOME LIST ───────────────────────────────────────────────────────────────
+function renderHomeList() {
+  const el = document.getElementById('home-loc-list');
+  el.innerHTML = LOCATIONS.map(loc => locCard(loc)).join('');
+}
+
+function locCard(loc) {
+  return `<div class="loc-card" onclick="openDetail(${loc.id})">
+    <div class="loc-icon-wrap" style="background:${loc.color}22">
+      <span style="font-size:22px">${loc.icon}</span>
+    </div>
+    <div class="loc-info">
+      <div class="loc-name">${loc.name}</div>
+      <div class="loc-cat">${catLabel(loc.cat)} · ${loc.code}</div>
+    </div>
+    <div class="loc-arrow">›</div>
+  </div>`;
+}
+
+function catLabel(cat) {
+  return {entrance:'Entrance',admin:'Administration',academic:'Academic Block',exit:'Exit'}[cat] || cat;
+}
+
+// ─── LOCATION LIST SCREEN ─────────────────────────────────────────────────────
+function renderLocList() {
+  const el = document.getElementById('loc-list');
+  let locs = LOCATIONS;
+  if (listFilter !== 'all') {
+    if (listFilter === 'entrance') locs = locs.filter(l => l.cat === 'entrance' || l.cat === 'exit');
+    else locs = locs.filter(l => l.cat === listFilter);
+  }
+  if (listSearch) {
+    const q = listSearch.toLowerCase();
+    locs = locs.filter(l => l.name.toLowerCase().includes(q) || l.short.toLowerCase().includes(q) || l.desc.toLowerCase().includes(q));
+  }
+  if (!locs.length) {
+    el.innerHTML = `<div style="text-align:center;padding:40px;color:var(--light)">
+      <div style="font-size:40px;margin-bottom:12px">🔍</div>
+      <div style="font-weight:600;font-size:15px">No locations found</div>
+      <div style="font-size:13px;margin-top:6px">Try a different search</div>
+    </div>`;
+    return;
+  }
+  el.innerHTML = locs.map(loc => locCard(loc)).join('');
+}
+
+function filterList(val) { listSearch = val; renderLocList(); }
+function setFilter(cat, el) {
+  listFilter = cat;
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderLocList();
+}
+
+// ─── DETAIL MODAL ─────────────────────────────────────────────────────────────
+function openDetail(id) {
+  const loc = LOCATIONS.find(l => l.id === id);
+  detailLoc = loc;
+  document.getElementById('d-icon').innerHTML = `<span style="font-size:36px">${loc.icon}</span>`;
+  document.getElementById('d-icon').style.background = loc.color + '22';
+  document.getElementById('d-name').textContent = loc.name;
+  document.getElementById('d-badge').textContent = catLabel(loc.cat);
+  document.getElementById('d-badge').style.background = loc.color + '22';
+  document.getElementById('d-badge').style.color = loc.color;
+  document.getElementById('d-desc').textContent = loc.desc;
+  document.getElementById('d-info').innerHTML = `
+    <div class="detail-info-row"><span class="detail-info-icon">🏷️</span>Building Code: ${loc.code}</div>
+    <div class="detail-info-row"><span class="detail-info-icon">🗂️</span>Category: ${catLabel(loc.cat)}</div>
+    <div class="detail-info-row"><span class="detail-info-icon">📍</span>Campus Position: ${Math.round(loc.x*100)}% East, ${Math.round((1-loc.y)*100)}% North</div>
+  `;
+  document.getElementById('detail-modal').classList.add('open');
+}
+
+function closeDetail(e) {
+  if (e && e.target !== document.getElementById('detail-modal')) return;
+  document.getElementById('detail-modal').classList.remove('open');
+}
+
+function navigateToFromDetail() {
+  if (!detailLoc) return;
+  selectedTo = detailLoc;
+  document.getElementById('detail-modal').classList.remove('open');
+  updateNavUI();
+  showTab('navigate');
+}
+
+// ─── LOCATION PICKER ─────────────────────────────────────────────────────────
+function openPicker(which) {
+  currentPicker = which;
+  document.getElementById('picker-title').textContent = which === 'from' ? 'Select Starting Point' : 'Select Destination';
+  document.getElementById('picker-search').value = '';
+  renderPickerList('');
+  document.getElementById('picker-modal').classList.add('open');
+  setTimeout(() => document.getElementById('picker-search').focus(), 300);
+}
+
+function closePicker(e) {
+  if (e && e.target !== document.getElementById('picker-modal')) return;
+  document.getElementById('picker-modal').classList.remove('open');
+}
+
+function renderPickerList(q) {
+  const locs = q ? LOCATIONS.filter(l =>
+    l.name.toLowerCase().includes(q.toLowerCase()) ||
+    l.short.toLowerCase().includes(q.toLowerCase())) : LOCATIONS;
+  document.getElementById('picker-list').innerHTML = locs.map(loc => `
+    <div class="modal-item" onclick="selectLoc(${loc.id})">
+      <div class="modal-item-icon" style="background:${loc.color}22">${loc.icon}</div>
+      <div>
+        <div class="modal-item-name">${loc.name}</div>
+        <div class="modal-item-cat">${catLabel(loc.cat)}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterPicker(val) { renderPickerList(val); }
+
+function selectLoc(id) {
+  const loc = LOCATIONS.find(l => l.id === id);
+  if (currentPicker === 'from') selectedFrom = loc;
+  else selectedTo = loc;
+  updateNavUI();
+  document.getElementById('picker-modal').classList.remove('open');
+  document.getElementById('route-result').innerHTML = '';
+}
+
+function updateNavUI() {
+  const ft = document.getElementById('from-text');
+  const tt = document.getElementById('to-text');
+  const fc = document.getElementById('from-clear');
+  const tc = document.getElementById('to-clear');
+  if (selectedFrom) {
+    ft.textContent = selectedFrom.name; ft.classList.add('selected'); fc.style.display='';
+  } else {
+    ft.textContent = 'Select starting point...'; ft.classList.remove('selected'); fc.style.display='none';
+  }
+  if (selectedTo) {
+    tt.textContent = selectedTo.name; tt.classList.add('selected'); tc.style.display='';
+  } else {
+    tt.textContent = 'Select destination...'; tt.classList.remove('selected'); tc.style.display='none';
+  }
+}
+
+function clearSel(which) {
+  if (which === 'from') selectedFrom = null;
+  else selectedTo = null;
+  updateNavUI();
+  document.getElementById('route-result').innerHTML = '';
+}
+
+function swapLocations() {
+  [selectedFrom, selectedTo] = [selectedTo, selectedFrom];
+  updateNavUI();
+  document.getElementById('route-result').innerHTML = '';
+}
+
+// ─── DIJKSTRA ROUTING ────────────────────────────────────────────────────────
+function dijkstra(fromId, toId) {
+  const graph = {};
+  LOCATIONS.forEach(l => graph[l.id] = []);
+  PATHS.forEach(([f,t,dist,time]) => {
+    graph[f].push({ to:t, dist, time });
+  });
+
+  const dist = {}, prev = {}, prevEdge = {};
+  LOCATIONS.forEach(l => dist[l.id] = Infinity);
+  dist[fromId] = 0;
+  const visited = new Set();
+  const queue = [...LOCATIONS.map(l => l.id)];
+
+  while (queue.length) {
+    queue.sort((a,b) => dist[a] - dist[b]);
+    const u = queue.shift();
+    if (visited.has(u)) continue;
+    visited.add(u);
+    if (u === toId) break;
+    for (const edge of (graph[u] || [])) {
+      const newDist = dist[u] + edge.time;
+      if (newDist < dist[edge.to]) {
+        dist[edge.to] = newDist;
+        prev[edge.to] = u;
+        prevEdge[edge.to] = edge;
+      }
+    }
+  }
+
+  if (dist[toId] === Infinity) return null;
+
+  const pathIds = [], pathEdges = [];
+  let cur = toId;
+  while (cur !== undefined) {
+    pathIds.unshift(cur);
+    if (prevEdge[cur]) pathEdges.unshift(prevEdge[cur]);
+    cur = prev[cur];
+  }
+
+  const locs = pathIds.map(id => LOCATIONS.find(l => l.id === id));
+  const totalDist = pathEdges.reduce((s,e) => s+e.dist, 0);
+  const totalTime = dist[toId];
+  return { locs, edges: pathEdges, totalDist, totalTime };
+}
+
+function findRoute() {
+  if (!selectedFrom || !selectedTo) {
+    alert('Please select both a starting point and a destination.');
+    return;
+  }
+  if (selectedFrom.id === selectedTo.id) {
+    alert('Starting point and destination cannot be the same!');
+    return;
+  }
+  const result = dijkstra(selectedFrom.id, selectedTo.id);
+  const el = document.getElementById('route-result');
+  if (!result) {
+    el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--light)">
+      <div style="font-size:36px;margin-bottom:10px">😕</div>
+      <div style="font-weight:600">No route found</div>
+    </div>`;
+    return;
+  }
+  const mins = Math.ceil(result.totalTime/60);
+  const distLabel = result.totalDist >= 1000
+    ? (result.totalDist/1000).toFixed(1)+'km'
+    : result.totalDist+'m';
+
+  const steps = result.locs.map((loc, i) => {
+    const edge = result.edges[i];
+    const color = loc.color;
+    return `<div class="step-row">
+      <div class="step-line-col">
+        <div class="step-num" style="color:${color};border-color:${color};background:${color}15">${i+1}</div>
+        ${i < result.locs.length-1 ? '<div class="step-connector"></div>' : ''}
+      </div>
+      <div class="step-content">
+        <div class="step-name"><span>${loc.icon}</span>${loc.name}</div>
+        ${edge ? `<div class="step-dist">🚶 ${edge.dist}m · ${Math.ceil(edge.time/60)} min</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="route-result">
+      <div class="route-result-title">✅ Route Found!</div>
+      <div class="route-stats">
+        <div class="route-stat"><div class="route-stat-val">${distLabel}</div><div class="route-stat-lbl">Distance</div></div>
+        <div class="route-stat"><div class="route-stat-val">${mins} min</div><div class="route-stat-lbl">Walk Time</div></div>
+        <div class="route-stat"><div class="route-stat-val">${result.locs.length}</div><div class="route-stat-lbl">Stops</div></div>
+      </div>
+    </div>
+    <div class="steps-card">
+      <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:14px">🗺️ Step-by-Step Directions</div>
+      ${steps}
+    </div>
+  `;
+  el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+// ─── MAP ──────────────────────────────────────────────────────────────────────
+let canvas, ctx;
+
+function initMap() {
+  canvas = document.getElementById('campusCanvas');
+  ctx = canvas.getContext('2d');
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+  setupMapInteraction();
+}
+
+function resizeCanvas() {
+  if (!canvas) return;
+  const wrap = document.getElementById('mapWrap');
+  if (!wrap) return;
+  canvas.width = wrap.offsetWidth;
+  canvas.height = wrap.offsetHeight;
+  drawMap();
+}
+
+function getLocPos(loc) {
+  return {
+    x: offsetX + loc.x * canvas.width * scale,
+    y: offsetY + loc.y * canvas.height * scale,
+  };
+}
+
+function drawMap() {
+  if (!canvas || !ctx) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Background grid
+  ctx.save();
+  ctx.strokeStyle = 'rgba(11,31,74,0.06)';
+  ctx.lineWidth = 1;
+  const gridSize = 40 * scale;
+  for (let x = offsetX % gridSize; x < canvas.width; x += gridSize) {
+    ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke();
+  }
+  for (let y = offsetY % gridSize; y < canvas.height; y += gridSize) {
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke();
+  }
+  ctx.restore();
+
+  // Campus boundary
+  const pad = 20 * scale;
+  const xs = LOCATIONS.map(l => offsetX + l.x * canvas.width * scale);
+  const ys = LOCATIONS.map(l => offsetY + l.y * canvas.height * scale);
+  const minX = Math.min(...xs) - pad, maxX = Math.max(...xs) + pad;
+  const minY = Math.min(...ys) - pad, maxY = Math.max(...ys) + pad;
+  ctx.save();
+  ctx.fillStyle = 'rgba(11,31,74,0.04)';
+  ctx.strokeStyle = 'rgba(11,31,74,0.15)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8,4]);
+  const r = 16*scale;
+  ctx.beginPath();
+  ctx.moveTo(minX+r,minY); ctx.lineTo(maxX-r,minY);
+  ctx.arcTo(maxX,minY,maxX,minY+r,r);
+  ctx.lineTo(maxX,maxY-r);
+  ctx.arcTo(maxX,maxY,maxX-r,maxY,r);
+  ctx.lineTo(minX+r,maxY);
+  ctx.arcTo(minX,maxY,minX,maxY-r,r);
+  ctx.lineTo(minX,minY+r);
+  ctx.arcTo(minX,minY,minX+r,minY,r);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  ctx.restore();
+
+  // Unique paths
+  const drawn = new Set();
+  PATHS.forEach(([f,t]) => {
+    const key = [Math.min(f,t), Math.max(f,t)].join('-');
+    if (drawn.has(key)) return;
+    drawn.add(key);
+    const a = LOCATIONS.find(l => l.id===f);
+    const b = LOCATIONS.find(l => l.id===t);
+    const pa = getLocPos(a), pb = getLocPos(b);
+    const isHighlight = mapSelectedLoc &&
+      (mapSelectedLoc.id === f || mapSelectedLoc.id === t);
+    ctx.save();
+    ctx.strokeStyle = isHighlight ? '#ff5c35' : 'rgba(11,31,74,0.18)';
+    ctx.lineWidth = isHighlight ? 3*scale : 2*scale;
+    ctx.setLineDash(isHighlight ? [] : [6,4]);
+    ctx.beginPath(); ctx.moveTo(pa.x,pa.y); ctx.lineTo(pb.x,pb.y); ctx.stroke();
+    ctx.restore();
+
+    // Distance label
+    if (isHighlight) {
+      const edge = PATHS.find(([ef,et]) => (ef===f&&et===t)||(ef===t&&et===f));
+      if (edge) {
+        const mx = (pa.x+pb.x)/2, my = (pa.y+pb.y)/2;
+        const label = edge[2]+'m';
+        ctx.save();
+        ctx.font = `bold ${11*scale}px DM Sans`;
+        ctx.fillStyle = '#fff';
+        const tw = ctx.measureText(label).width;
+        ctx.fillRect(mx-tw/2-4, my-9*scale, tw+8, 16*scale);
+        ctx.fillStyle = '#ff5c35';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(label, mx, my);
+        ctx.restore();
+      }
+    }
+  });
+
+  // Location nodes
+  LOCATIONS.forEach(loc => {
+    const p = getLocPos(loc);
+    const r = 20 * scale;
+    const isSelected = mapSelectedLoc && mapSelectedLoc.id === loc.id;
+
+    // Glow
+    if (isSelected) {
+      const grd = ctx.createRadialGradient(p.x,p.y,r,p.x,p.y,r*2.5);
+      grd.addColorStop(0, loc.color+'55');
+      grd.addColorStop(1, 'transparent');
+      ctx.fillStyle = grd;
+      ctx.beginPath(); ctx.arc(p.x,p.y,r*2.5,0,Math.PI*2); ctx.fill();
+    }
+
+    // Circle
+    ctx.save();
+    ctx.shadowColor = loc.color;
+    ctx.shadowBlur = isSelected ? 14 : 6;
+    ctx.fillStyle = '#fff';
+    ctx.strokeStyle = loc.color;
+    ctx.lineWidth = isSelected ? 3.5*scale : 2*scale;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, isSelected ? r*1.15 : r, 0, Math.PI*2);
+    ctx.fill(); ctx.stroke();
+    ctx.restore();
+
+    // Icon
+    ctx.font = `${isSelected ? 16*scale : 14*scale}px serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(loc.icon, p.x, p.y);
+
+    // Label
+    ctx.font = `bold ${isSelected ? 11*scale : 10*scale}px DM Sans`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillStyle = isSelected ? loc.color : '#0f172a';
+    ctx.fillText(loc.short, p.x, p.y + r + 4*scale);
+  });
+
+  // GPS user position (drawn on top of everything)
+  drawGPSDot();
+}
+
+function setupMapInteraction() {
+  const wrap = document.getElementById('mapWrap');
+  // Mouse
+  wrap.addEventListener('mousedown', e => { isDragging=true; lastX=e.clientX; lastY=e.clientY; });
+  wrap.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    offsetX += e.clientX-lastX; offsetY += e.clientY-lastY;
+    lastX=e.clientX; lastY=e.clientY; drawMap();
+  });
+  wrap.addEventListener('mouseup', e => {
+    if (Math.abs(e.clientX-lastX)<4 && Math.abs(e.clientY-lastY)<4) handleMapClick(e);
+    isDragging=false;
+  });
+  // Wheel zoom
+  wrap.addEventListener('wheel', e => {
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.1 : 0.9;
+    const rect = canvas.getBoundingClientRect();
+    const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+    offsetX = cx - (cx-offsetX)*factor;
+    offsetY = cy - (cy-offsetY)*factor;
+    scale *= factor;
+    scale = Math.max(0.4, Math.min(4, scale));
+    drawMap();
+  }, { passive:false });
+  // Touch
+  wrap.addEventListener('touchstart', e => {
+    if (e.touches.length===1) { isDragging=true; lastX=e.touches[0].clientX; lastY=e.touches[0].clientY; }
+    if (e.touches.length===2) { lastDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY); }
+  }, { passive:true });
+  wrap.addEventListener('touchmove', e => {
+    if (e.touches.length===1 && isDragging) {
+      offsetX += e.touches[0].clientX-lastX; offsetY += e.touches[0].clientY-lastY;
+      lastX=e.touches[0].clientX; lastY=e.touches[0].clientY; drawMap();
+    }
+    if (e.touches.length===2) {
+      const d = Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+      const f = d/lastDist;
+      scale *= f; scale = Math.max(0.4,Math.min(4,scale)); lastDist=d; drawMap();
+    }
+  }, { passive:true });
+  wrap.addEventListener('touchend', e => {
+    if (e.changedTouches.length===1) {
+      const dx=e.changedTouches[0].clientX-lastX, dy=e.changedTouches[0].clientY-lastY;
+      if (Math.abs(dx)<8&&Math.abs(dy)<8) handleMapClick(e.changedTouches[0]);
+    }
+    isDragging=false;
+  });
+}
+
+function handleMapClick(e) {
+  const rect = canvas.getBoundingClientRect();
+  const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+  let hit = null;
+  LOCATIONS.forEach(loc => {
+    const p = getLocPos(loc);
+    const r = 24*scale;
+    if (Math.hypot(cx-p.x,cy-p.y) < r) hit = loc;
+  });
+  if (hit) {
+    mapSelectedLoc = hit;
+    showMapInfo(hit);
+  } else {
+    mapSelectedLoc = null;
+    document.getElementById('mapInfoPanel').classList.remove('visible');
+  }
+  drawMap();
+}
+
+function showMapInfo(loc) {
+  document.getElementById('mapInfoIcon').innerHTML = loc.icon;
+  document.getElementById('mapInfoIcon').style.background = loc.color + '22';
+  document.getElementById('mapInfoName').textContent = loc.name;
+  document.getElementById('mapInfoCat').textContent = catLabel(loc.cat);
+  document.getElementById('mapInfoPanel').classList.add('visible');
+}
+
+function navigateFromMap() {
+  if (!mapSelectedLoc) return;
+  selectedTo = mapSelectedLoc;
+  updateNavUI();
+  showTab('navigate');
+}
+
+// ─── GPS ──────────────────────────────────────────────────────────────────────
+let gpsWatchId = null;
+let userGPS = null;          // { lat, lng, accuracy }
+let userMapPos = null;       // { x, y } in canvas coords — derived from GPS
+let gpsTracking = false;
+
+// Campus reference anchors — map the campus bounding box to real-world GPS
+// These are approximate campus corners. The user can calibrate by tapping
+// two known points and entering their GPS coords; for now we use smart defaults.
+// Internal map coords: x∈[0,1] left→right, y∈[0,1] top→bottom
+// Campus approximate center (default: a generic south-Indian college campus)
+// Users can customise GPS_ORIGIN by calling calibrateGPS(lat,lng) in the console.
+let GPS_ORIGIN = null;   // { lat, lng, mapX, mapY } — set on first fix if not calibrated
+const GPS_SCALE = 0.00009; // degrees per map-unit (≈10 m/unit for a ~500m campus)
+
+function toggleGPS() {
+  if (gpsTracking) {
+    stopGPS();
+  } else {
+    startGPS();
+  }
+}
+
+function startGPS() {
+  if (!navigator.geolocation) {
+    showGPSError('GPS not supported by this browser/device.');
+    return;
+  }
+  gpsTracking = true;
+  document.getElementById('gpsPinBtn').classList.add('tracking');
+  document.getElementById('gpsPinBtn').textContent = '🔵';
+  showGPSStatusBar('Acquiring GPS signal…');
+
+  gpsWatchId = navigator.geolocation.watchPosition(
+    onGPSSuccess,
+    onGPSError,
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 2000 }
+  );
+}
+
+function stopGPS() {
+  if (gpsWatchId !== null) {
+    navigator.geolocation.clearWatch(gpsWatchId);
+    gpsWatchId = null;
+  }
+  gpsTracking = false;
+  userGPS = null;
+  userMapPos = null;
+  GPS_ORIGIN = null;
+  document.getElementById('gpsPinBtn').classList.remove('tracking');
+  document.getElementById('gpsPinBtn').textContent = '📍';
+  document.getElementById('gpsStatusBar').classList.remove('visible');
+  drawMap();
+}
+
+function onGPSSuccess(pos) {
+  const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+  userGPS = { lat, lng, accuracy };
+
+  // Auto-set origin on first fix so the blue dot appears at campus centre
+  if (!GPS_ORIGIN) {
+    // Place the first GPS fix at the campus centroid (average of all locations)
+    const cx = LOCATIONS.reduce((s,l) => s+l.x, 0) / LOCATIONS.length;
+    const cy = LOCATIONS.reduce((s,l) => s+l.y, 0) / LOCATIONS.length;
+    GPS_ORIGIN = { lat, lng, mapX: cx, mapY: cy };
+  }
+
+  // Convert GPS → map normalised coords [0,1]
+  const dx = (lng - GPS_ORIGIN.lng) / GPS_SCALE;
+  const dy = (lat - GPS_ORIGIN.lat) / GPS_SCALE; // lat increases northward → y decreases
+  userMapPos = { x: GPS_ORIGIN.mapX + dx, y: GPS_ORIGIN.mapY - dy };
+
+  // Accuracy in map units
+  const accMetres = accuracy;
+  userGPS.accMapUnits = accMetres / (GPS_SCALE * 111320); // rough metres-per-degree
+
+  const accStr = accuracy < 10 ? '±' + Math.round(accuracy) + 'm 🎯' :
+                 accuracy < 30 ? '±' + Math.round(accuracy) + 'm ✅' :
+                 '±' + Math.round(accuracy) + 'm (low accuracy)';
+  showGPSStatusBar(`GPS active · ${lat.toFixed(5)}, ${lng.toFixed(5)} · ${accStr}`);
+
+  drawMap();
+}
+
+function onGPSError(err) {
+  const msgs = {
+    1: 'Location permission denied. Please allow access in browser settings.',
+    2: 'GPS signal unavailable. Try moving outdoors.',
+    3: 'GPS request timed out. Retrying…'
+  };
+  showGPSError(msgs[err.code] || 'GPS error.');
+}
+
+function showGPSStatusBar(text) {
+  const bar = document.getElementById('gpsStatusBar');
+  bar.classList.add('visible');
+  document.getElementById('gpsStatusText').textContent = text;
+}
+
+function showGPSError(msg) {
+  gpsTracking = false;
+  document.getElementById('gpsPinBtn').classList.remove('tracking');
+  document.getElementById('gpsPinBtn').textContent = '📍';
+  showGPSStatusBar('⚠️ ' + msg);
+  setTimeout(() => document.getElementById('gpsStatusBar').classList.remove('visible'), 5000);
+}
+
+// Draw user's GPS position on the canvas
+function drawGPSDot() {
+  if (!userMapPos || !canvas) return;
+  const px = offsetX + userMapPos.x * canvas.width * scale;
+  const py = offsetY + userMapPos.y * canvas.height * scale;
+
+  // Accuracy ring
+  if (userGPS && userGPS.accMapUnits) {
+    const accPx = userGPS.accMapUnits * canvas.width * scale;
+    const grd = ctx.createRadialGradient(px, py, 0, px, py, accPx);
+    grd.addColorStop(0, 'rgba(59,130,246,0.18)');
+    grd.addColorStop(1, 'rgba(59,130,246,0)');
+    ctx.beginPath();
+    ctx.arc(px, py, accPx, 0, Math.PI * 2);
+    ctx.fillStyle = grd;
+    ctx.fill();
+  }
+
+  // Outer white ring
+  ctx.beginPath();
+  ctx.arc(px, py, 13 * scale, 0, Math.PI * 2);
+  ctx.fillStyle = '#fff';
+  ctx.shadowColor = 'rgba(59,130,246,0.5)';
+  ctx.shadowBlur = 10;
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // Inner blue dot
+  ctx.beginPath();
+  ctx.arc(px, py, 9 * scale, 0, Math.PI * 2);
+  ctx.fillStyle = '#3b82f6';
+  ctx.fill();
+
+  // Label
+  ctx.font = `bold ${10 * scale}px DM Sans`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = '#3b82f6';
+  ctx.fillText('You', px, py + 14 * scale);
+}
+
+// Use GPS location as "From" in Navigate tab
+function useGPSAsFrom() {
+  if (!userGPS) {
+    // Start GPS first, then auto-set when ready
+    startGPS();
+    showTab('map');
+    setTimeout(() => {
+      if (userGPS) setGPSAsFrom();
+    }, 4000);
+    return;
+  }
+  setGPSAsFrom();
+}
+
+function setGPSAsFrom() {
+  if (!userGPS) {
+    alert('GPS location not yet available. Tap the 📍 button on the Map tab first.');
+    return;
+  }
+  // Find the nearest campus location to the GPS fix
+  const nearest = findNearestLocation();
+  if (nearest) {
+    selectedFrom = nearest.loc;
+    updateNavUI();
+    const el = document.getElementById('route-result');
+    el.innerHTML = `<div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:12px;padding:14px 16px;margin-bottom:8px;font-size:13px;color:#3b82f6">
+      🛰️ GPS placed you nearest to <strong>${nearest.loc.name}</strong> (~${Math.round(nearest.distM)}m away). Set as starting point.
+    </div>`;
+  } else {
+    alert('Could not determine nearest campus location from GPS.');
+  }
+}
+
+function findNearestLocation() {
+  if (!userGPS) return null;
+  // Convert each location's normalised x,y to approx GPS coords
+  let best = null, bestDist = Infinity;
+  LOCATIONS.forEach(loc => {
+    if (!GPS_ORIGIN) return;
+    const locLng = GPS_ORIGIN.lng + (loc.x - GPS_ORIGIN.mapX) * GPS_SCALE;
+    const locLat = GPS_ORIGIN.lat - (loc.y - GPS_ORIGIN.mapY) * GPS_SCALE;
+    const dLat = (userGPS.lat - locLat) * 111320;
+    const dLng = (userGPS.lng - locLng) * 111320 * Math.cos(userGPS.lat * Math.PI/180);
+    const distM = Math.hypot(dLat, dLng);
+    if (distM < bestDist) { bestDist = distM; best = { loc, distM }; }
+  });
+  return best;
+}
+
+// Calibrate GPS: call calibrateGPS(lat, lng, locationId) in browser console
+// to anchor a known campus location to its real GPS coords for better accuracy.
+window.calibrateGPS = function(lat, lng, locId) {
+  const loc = LOCATIONS.find(l => l.id === locId);
+  if (!loc) { console.error('Unknown location id'); return; }
+  GPS_ORIGIN = { lat, lng, mapX: loc.x, mapY: loc.y };
+  console.log(`✅ GPS calibrated: ${loc.name} anchored to ${lat}, ${lng}`);
+  drawMap();
+};
+
+</script>
+</body>
+</html>
